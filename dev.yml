@@ -1,0 +1,33 @@
+name: absurd-test
+type: python
+edition: "2024"
+
+up:
+  - uv
+  - packages:
+      - postgres
+  - custom:
+      name: Ensure .env correctly set up
+      met?: test -f .env && grep -q 'OPENAI_API_BASE' .env
+      meet: cp example.env .env && echo "Please update .env with your configuration values."
+  - custom:
+      name: Start PostgreSQL
+      met?: brew services list --json | jq --exit-status 'any(.[]; .name == "postgresql@14" and .status == "started")'
+      meet: brew services start postgresql@14 && sleep 1
+      down: brew services stop postgresql@14
+  - custom:
+      name: Create Development Database
+      met?: "psql -U postgres -d absurd_test -c '\\l' | grep -q -e vault-set"
+      meet: ./scripts/bootstrap.sh
+  - custom:
+      name: Apply Pending Migrations
+      met?: uv run alembic current 2>/dev/null | grep -q '(head)'
+      meet: uv run alembic upgrade head
+
+commands:
+  server: overmind start --no-port --any-can-die -f Procfile
+  api: uv run uvicorn absurd_test.main:app --reload
+  worker: uv run python -m absurd_test.worker
+
+open:
+  app: http://localhost:8000

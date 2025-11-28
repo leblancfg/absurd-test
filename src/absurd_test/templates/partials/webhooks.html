@@ -1,0 +1,18 @@
+{% if webhooks %}
+<ul class="divide-y divide-gray-200">
+    {% for wh in webhooks %}
+    <li class="py-3 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <span class="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">{{ wh.tag }}</span>
+            <span class="text-gray-600 text-sm truncate max-w-md">{{ wh.url }}</span>
+        </div>
+        <button hx-delete="/admin/webhooks/{{ wh.id }}" hx-target="#webhook-list" hx-swap="innerHTML"
+                class="text-red-500 hover:text-red-700 text-sm">
+            Delete
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="text-gray-500">No webhooks registered yet.</p>
+{% endif %}

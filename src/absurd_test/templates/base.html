@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Absurd Agent Demo{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        htmx.config.includeIndicatorStyles = false;
+        window.addEventListener('beforeunload', e => { delete e.returnValue; });
+
+        function renderMarkdown() {
+            document.querySelectorAll('[data-markdown]').forEach(el => {
+                if (!el.dataset.rendered) {
+                    el.innerHTML = marked.parse(el.textContent);
+                    el.dataset.rendered = 'true';
+                }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', renderMarkdown);
+        document.addEventListener('htmx:afterSwap', renderMarkdown);
+    </script>
+    <style>
+        .prose h1, .prose h2, .prose h3 { font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; }
+        .prose p { margin-bottom: 0.5em; }
+        .prose ul, .prose ol { margin-left: 1.5em; margin-bottom: 0.5em; }
+        .prose li { margin-bottom: 0.25em; }
+        .prose code { background: #e5e7eb; padding: 0.125em 0.25em; border-radius: 0.25em; font-size: 0.875em; }
+        .prose pre { background: #1f2937; color: #e5e7eb; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin: 0.5em 0; }
+        .prose pre code { background: none; padding: 0; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <div class="max-w-3xl mx-auto p-6 flex-1 w-full">
+        <div class="flex justify-between items-center mb-6">
+            <a href="/" class="text-3xl font-bold text-gray-800 hover:text-gray-600">Absurd Agent Demo</a>
+            <a href="/admin" class="text-gray-500 hover:text-gray-700" title="Admin">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+            </a>
+        </div>
+        {% block content %}{% endblock %}
+    </div>
+    <footer class="max-w-3xl mx-auto w-full px-6 pt-4 pb-10 text-center text-sm text-gray-500">
+        <a href="/about" class="hover:text-gray-700">About</a>
+        <span class="mx-2">·</span>
+        <a href="https://github.com/earendil-works/absurd" class="hover:text-gray-700" target="_blank">Absurd</a>
+        <span class="mx-2">·</span>
+        <a href="https://github.com/leblancfg/absurd-test" class="hover:text-gray-700" target="_blank">Source</a>
+    </footer>
+</body>
+</html>

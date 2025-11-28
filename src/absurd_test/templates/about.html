@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}About - Absurd Agent Demo{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">About</h2>
+
+    <div class="prose text-gray-600 space-y-4">
+        <p>
+            This is a demo application showcasing <a href="https://github.com/earendil-works/absurd" class="text-blue-600 hover:underline" target="_blank">Absurd</a>,
+            a PostgreSQL-based durable execution system created by Armin Ronacher (creator of Flask).
+        </p>
+
+        <p>
+            The app demonstrates how Absurd can be used to build reliable task queues with:
+        </p>
+
+        <ul class="list-disc list-inside space-y-1">
+            <li>Durable task execution with automatic checkpointing</li>
+            <li>Webhook callbacks on task completion</li>
+            <li>Tag-based routing for task categorization</li>
+            <li>Simple REST API for task management</li>
+        </ul>
+
+        <h3 class="text-lg font-semibold text-gray-700 mt-6">Tech Stack</h3>
+        <ul class="list-disc list-inside space-y-1">
+            <li><strong>Backend:</strong> FastAPI + Absurd + PostgreSQL</li>
+            <li><strong>Frontend:</strong> HTMX + Tailwind CSS</li>
+            <li><strong>AI:</strong> Pydantic AI</li>
+        </ul>
+
+        <h3 class="text-lg font-semibold text-gray-700 mt-6">How It Works</h3>
+        <ol class="list-decimal list-inside space-y-1">
+            <li>Submit a task with an optional tag</li>
+            <li>Task is queued in PostgreSQL via Absurd</li>
+            <li>Worker picks up and processes the task</li>
+            <li>If a webhook is registered for that tag, it gets called with the result</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}
