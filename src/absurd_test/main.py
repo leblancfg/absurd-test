@@ -10,9 +10,10 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from sqlalchemy import select
 
 from absurd_test.config import get_settings
-from absurd_test.db import get_session
+from absurd_test.db import get_async_session
 from absurd_test.models import AgentJob, Webhook
 
 PKG_DIR = Path(__file__).resolve().parent
@@ -39,9 +40,11 @@ app = FastAPI(title="Absurd Agent Demo", lifespan=lifespan)
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Show the main page with job submission form and job list."""
-    session = get_session()
-    jobs = session.query(AgentJob).order_by(AgentJob.created_at.desc()).limit(3).all()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(AgentJob).order_by(AgentJob.created_at.desc()).limit(3)
+        )
+        jobs = result.scalars().all()
     return templates.TemplateResponse("index.html", {"request": request, "jobs": jobs})
 
 
@@ -54,9 +57,11 @@ async def about_page(request: Request):
 @app.get("/partials/jobs", response_class=HTMLResponse)
 async def partials_jobs(request: Request):
     """Return just the job list HTML fragment for HTMX polling."""
-    session = get_session()
-    jobs = session.query(AgentJob).order_by(AgentJob.created_at.desc()).limit(3).all()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(AgentJob).order_by(AgentJob.created_at.desc()).limit(3)
+        )
+        jobs = result.scalars().all()
     return templates.TemplateResponse("partials/jobs.html", {"request": request, "jobs": jobs})
 
 
@@ -66,11 +71,10 @@ async def submit_job(request: Request, prompt: str = Form(...), tag: str = Form(
     task_id = str(uuid.uuid4())
     tag = tag.strip() or None
 
-    session = get_session()
-    job = AgentJob(task_id=task_id, prompt=prompt, tag=tag, status="pending")
-    session.add(job)
-    session.commit()
-    session.close()
+    async with get_async_session() as session:
+        job = AgentJob(task_id=task_id, prompt=prompt, tag=tag, status="pending")
+        session.add(job)
+        await session.commit()
 
     absurd_app.spawn(
         "run-agent",
@@ -78,67 +82,68 @@ async def submit_job(request: Request, prompt: str = Form(...), tag: str = Form(
         queue="agent_tasks",
     )
 
-    session = get_session()
-    jobs = session.query(AgentJob).order_by(AgentJob.created_at.desc()).limit(3).all()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(AgentJob).order_by(AgentJob.created_at.desc()).limit(3)
+        )
+        jobs = result.scalars().all()
     return templates.TemplateResponse("partials/jobs.html", {"request": request, "jobs": jobs})
 
 
 @app.get("/job/{task_id}", response_class=HTMLResponse)
 async def get_job(request: Request, task_id: str):
     """View a specific job's details."""
-    session = get_session()
-    job = session.query(AgentJob).filter_by(task_id=task_id).first()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(select(AgentJob).where(AgentJob.task_id == task_id))
+        job = result.scalar_one_or_none()
     return templates.TemplateResponse("job.html", {"request": request, "job": job})
 
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     """Admin page for managing webhooks."""
-    session = get_session()
-    webhooks = session.query(Webhook).order_by(Webhook.created_at.desc()).all()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(select(Webhook).order_by(Webhook.created_at.desc()))
+        webhooks = result.scalars().all()
     return templates.TemplateResponse("admin.html", {"request": request, "webhooks": webhooks})
 
 
 @app.get("/partials/webhooks", response_class=HTMLResponse)
 async def partials_webhooks(request: Request):
     """Return just the webhooks list HTML fragment for HTMX."""
-    session = get_session()
-    webhooks = session.query(Webhook).order_by(Webhook.created_at.desc()).all()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(select(Webhook).order_by(Webhook.created_at.desc()))
+        webhooks = result.scalars().all()
     return templates.TemplateResponse("partials/webhooks.html", {"request": request, "webhooks": webhooks})
 
 
 @app.post("/admin/webhooks", response_class=HTMLResponse)
 async def create_webhook_form(request: Request, tag: str = Form(...), url: str = Form(...)):
     """Create a webhook from the admin form."""
-    session = get_session()
-    webhook = Webhook(tag=tag.strip(), url=url.strip())
-    session.add(webhook)
-    session.commit()
-    session.close()
+    async with get_async_session() as session:
+        webhook = Webhook(tag=tag.strip(), url=url.strip())
+        session.add(webhook)
+        await session.commit()
 
-    session = get_session()
-    webhooks = session.query(Webhook).order_by(Webhook.created_at.desc()).all()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(select(Webhook).order_by(Webhook.created_at.desc()))
+        webhooks = result.scalars().all()
     return templates.TemplateResponse("partials/webhooks.html", {"request": request, "webhooks": webhooks})
 
 
 @app.delete("/admin/webhooks/{webhook_id}", response_class=HTMLResponse)
 async def delete_webhook_form(request: Request, webhook_id: int):
     """Delete a webhook from the admin page."""
-    session = get_session()
-    webhook = session.query(Webhook).filter_by(id=webhook_id).first()
-    if webhook:
-        session.delete(webhook)
-        session.commit()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(select(Webhook).where(Webhook.id == webhook_id))
+        webhook = result.scalar_one_or_none()
+        if webhook:
+            await session.delete(webhook)
+            await session.commit()
 
-    session = get_session()
-    webhooks = session.query(Webhook).order_by(Webhook.created_at.desc()).all()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(select(Webhook).order_by(Webhook.created_at.desc()))
+        webhooks = result.scalars().all()
     return templates.TemplateResponse("partials/webhooks.html", {"request": request, "webhooks": webhooks})
 
 
@@ -161,11 +166,10 @@ async def create_task(task: TaskCreate):
     task_id = str(uuid.uuid4())
     tag = task.tag.strip() if task.tag else None
 
-    session = get_session()
-    job = AgentJob(task_id=task_id, prompt=task.prompt, tag=tag, status="pending")
-    session.add(job)
-    session.commit()
-    session.close()
+    async with get_async_session() as session:
+        job = AgentJob(task_id=task_id, prompt=task.prompt, tag=tag, status="pending")
+        session.add(job)
+        await session.commit()
 
     absurd_app.spawn(
         "run-agent",
@@ -179,9 +183,9 @@ async def create_task(task: TaskCreate):
 @app.get("/api/tasks/{task_id}")
 async def get_task(task_id: str):
     """Get task status and result."""
-    session = get_session()
-    job = session.query(AgentJob).filter_by(task_id=task_id).first()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(select(AgentJob).where(AgentJob.task_id == task_id))
+        job = result.scalar_one_or_none()
 
     if not job:
         return {"error": "task not found"}
@@ -199,15 +203,14 @@ async def get_task(task_id: str):
 @app.delete("/api/tasks/{task_id}")
 async def delete_task(task_id: str):
     """Delete a task."""
-    session = get_session()
-    job = session.query(AgentJob).filter_by(task_id=task_id).first()
-    if not job:
-        session.close()
-        return {"error": "task not found"}
+    async with get_async_session() as session:
+        result = await session.execute(select(AgentJob).where(AgentJob.task_id == task_id))
+        job = result.scalar_one_or_none()
+        if not job:
+            return {"error": "task not found"}
 
-    session.delete(job)
-    session.commit()
-    session.close()
+        await session.delete(job)
+        await session.commit()
 
     return {"deleted": task_id}
 
@@ -215,28 +218,30 @@ async def delete_task(task_id: str):
 @app.delete("/jobs/{task_id}", response_class=HTMLResponse)
 async def delete_job_ui(request: Request, task_id: str):
     """Delete a job from UI and return updated job list."""
-    session = get_session()
-    job = session.query(AgentJob).filter_by(task_id=task_id).first()
-    if job:
-        session.delete(job)
-        session.commit()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(select(AgentJob).where(AgentJob.task_id == task_id))
+        job = result.scalar_one_or_none()
+        if job:
+            await session.delete(job)
+            await session.commit()
 
-    session = get_session()
-    jobs = session.query(AgentJob).order_by(AgentJob.created_at.desc()).limit(3).all()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(
+            select(AgentJob).order_by(AgentJob.created_at.desc()).limit(3)
+        )
+        jobs = result.scalars().all()
     return templates.TemplateResponse("partials/jobs.html", {"request": request, "jobs": jobs})
 
 
 @app.post("/api/webhooks")
 async def create_webhook(webhook: WebhookCreate):
     """Register a webhook for a tag."""
-    session = get_session()
-    wh = Webhook(tag=webhook.tag.strip(), url=webhook.url.strip())
-    session.add(wh)
-    session.commit()
-    webhook_id = wh.id
-    session.close()
+    async with get_async_session() as session:
+        wh = Webhook(tag=webhook.tag.strip(), url=webhook.url.strip())
+        session.add(wh)
+        await session.commit()
+        await session.refresh(wh)
+        webhook_id = wh.id
 
     return {"id": webhook_id, "tag": webhook.tag, "url": webhook.url}
 
@@ -244,9 +249,9 @@ async def create_webhook(webhook: WebhookCreate):
 @app.get("/api/webhooks")
 async def list_webhooks():
     """List all registered webhooks."""
-    session = get_session()
-    webhooks = session.query(Webhook).all()
-    session.close()
+    async with get_async_session() as session:
+        result = await session.execute(select(Webhook))
+        webhooks = result.scalars().all()
 
     return [
         {"id": wh.id, "tag": wh.tag, "url": wh.url, "created_at": wh.created_at.isoformat()}
@@ -257,14 +262,13 @@ async def list_webhooks():
 @app.delete("/api/webhooks/{webhook_id}")
 async def delete_webhook(webhook_id: int):
     """Delete a webhook."""
-    session = get_session()
-    webhook = session.query(Webhook).filter_by(id=webhook_id).first()
-    if not webhook:
-        session.close()
-        return {"error": "webhook not found"}
+    async with get_async_session() as session:
+        result = await session.execute(select(Webhook).where(Webhook.id == webhook_id))
+        webhook = result.scalar_one_or_none()
+        if not webhook:
+            return {"error": "webhook not found"}
 
-    session.delete(webhook)
-    session.commit()
-    session.close()
+        await session.delete(webhook)
+        await session.commit()
 
     return {"deleted": webhook_id}

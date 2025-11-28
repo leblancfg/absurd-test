@@ -1,6 +1,8 @@
 """Absurd worker that processes agent tasks from the queue."""
 
+import argparse
 import logging
+import time
 
 import httpx
 from absurd_sdk import Absurd
@@ -12,6 +14,8 @@ from absurd_test.models import AgentJob, Webhook
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+TEST_MODE = False
 
 
 def create_absurd_app() -> Absurd:
@@ -63,7 +67,10 @@ def handle_agent_task(params: dict, ctx):
             session.commit()
         session.close()
 
-    result = ctx.step("run-agent", lambda: run_agent(prompt))
+    if TEST_MODE:
+        result = ctx.step("test-sleep", lambda: test_task(prompt))
+    else:
+        result = ctx.step("run-agent", lambda: run_agent(prompt))
 
     @ctx.run_step("save-result")
     def save_result():
@@ -83,11 +90,23 @@ def handle_agent_task(params: dict, ctx):
     return {"task_id": task_id, "result": result}
 
 
-def run_worker():
+def test_task(prompt: str) -> str:
+    """Simulate work by sleeping instead of calling AI."""
+    time.sleep(3)
+    return f"Test result for: {prompt}"
+
+
+def run_worker(test_mode: bool = False):
     """Start the worker to process tasks."""
-    logger.info("Starting Absurd worker for 'agent_tasks' queue...")
+    global TEST_MODE
+    TEST_MODE = test_mode
+    mode_str = "TEST MODE (sleep 3s)" if test_mode else "PRODUCTION MODE (AI calls)"
+    logger.info(f"Starting Absurd worker for 'agent_tasks' queue - {mode_str}")
     app.start_worker()
 
 
 if __name__ == "__main__":
-    run_worker()
+    parser = argparse.ArgumentParser(description="Run Absurd worker")
+    parser.add_argument("--test", action="store_true", help="Test mode: sleep instead of calling AI")
+    args = parser.parse_args()
+    run_worker(test_mode=args.test)
