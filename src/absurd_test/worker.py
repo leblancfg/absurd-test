@@ -102,7 +102,15 @@ def run_worker(test_mode: bool = False):
     """Start the worker to process tasks."""
     global TEST_MODE
     TEST_MODE = test_mode
-    mode_str = "TEST MODE (sleep 3s)" if test_mode else "PRODUCTION MODE (AI calls)"
+
+    settings = get_settings()
+    if settings.kiosk:
+        mode_str = "KIOSK MODE (Oblique Strategies)"
+    elif test_mode:
+        mode_str = "TEST MODE (sleep 3s)"
+    else:
+        mode_str = "PRODUCTION MODE (AI calls)"
+
     logger.info(f"Starting Absurd worker for 'agent_tasks' queue - {mode_str}")
     app.start_worker()
 
