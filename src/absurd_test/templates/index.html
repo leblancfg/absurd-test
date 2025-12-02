@@ -2,14 +2,14 @@
 
 {% block content %}
 <div class="bg-white rounded-lg shadow p-6 mb-6">
-    <form hx-post="/submit" hx-target="#job-list" hx-swap="innerHTML" hx-on::after-request="this.reset()" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    <form hx-post="/submit" hx-target="#job-list" hx-swap="innerHTML" hx-on::after-request="this.reset()" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <input type="text" name="prompt" placeholder="Enter a prompt..."
-               class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <div class="flex gap-3">
+               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="flex gap-2">
             <input type="text" name="tag" placeholder="tag"
-                   class="flex-1 sm:w-24 p-3 border border-gray-200 border-dashed rounded-lg text-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:text-gray-700 focus:border-solid">
+                   class="flex-1 sm:w-20 px-3 py-2 border border-gray-200 border-dashed rounded-lg text-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:text-gray-700 focus:border-solid">
             <button type="submit"
-                    class="px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer whitespace-nowrap">
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer whitespace-nowrap">
                 Submit
             </button>
         </div>
