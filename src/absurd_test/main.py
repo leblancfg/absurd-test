@@ -52,7 +52,8 @@ async def index(request: Request):
 @app.get("/about", response_class=HTMLResponse)
 async def about_page(request: Request):
     """Show the about page."""
-    return templates.TemplateResponse("about.html", {"request": request})
+    settings = get_settings()
+    return templates.TemplateResponse("about.html", {"request": request, "kiosk": settings.kiosk})
 
 
 @app.get("/partials/jobs", response_class=HTMLResponse)
@@ -94,19 +95,21 @@ async def submit_job(request: Request, prompt: str = Form(...), tag: str = Form(
 @app.get("/job/{task_id}", response_class=HTMLResponse)
 async def get_job(request: Request, task_id: str):
     """View a specific job's details."""
+    settings = get_settings()
     async with get_async_session() as session:
         result = await session.execute(select(AgentJob).where(AgentJob.task_id == task_id))
         job = result.scalar_one_or_none()
-    return templates.TemplateResponse("job.html", {"request": request, "job": job})
+    return templates.TemplateResponse("job.html", {"request": request, "job": job, "kiosk": settings.kiosk})
 
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     """Admin page for managing webhooks."""
+    settings = get_settings()
     async with get_async_session() as session:
         result = await session.execute(select(Webhook).order_by(Webhook.created_at.desc()))
         webhooks = result.scalars().all()
-    return templates.TemplateResponse("admin.html", {"request": request, "webhooks": webhooks})
+    return templates.TemplateResponse("admin.html", {"request": request, "webhooks": webhooks, "kiosk": settings.kiosk})
 
 
 @app.get("/partials/webhooks", response_class=HTMLResponse)
