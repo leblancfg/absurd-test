@@ -37,6 +37,29 @@
             <li>Worker picks up and processes the task</li>
             <li>If a webhook is registered for that tag, it gets called with the result</li>
         </ol>
+
+        {% if kiosk %}
+        <h3 class="text-lg font-semibold text-gray-700 mt-6">KIOSK Mode: Oblique Strategies</h3>
+        <p>
+            This instance is running in <strong>KIOSK mode</strong>, which means it returns
+            <a href="https://en.wikipedia.org/wiki/Oblique_Strategies" class="text-blue-600 hover:underline" target="_blank">Oblique Strategies</a>
+            instead of making API calls to a language model. Oblique Strategies is a deck of cards created by
+            Brian Eno and Peter Schmidt in 1975, designed to help creative people break through blocks by
+            suggesting lateral thinking approaches.
+        </p>
+        <p>
+            When you submit a prompt, the system will:
+        </p>
+        <ul class="list-disc list-inside space-y-1">
+            <li>Wait approximately 3 seconds (with slight randomization)</li>
+            <li>Return a random Oblique Strategy from the collection</li>
+            <li>Store the result in the database with full durability guarantees</li>
+        </ul>
+        <p>
+            This mode demonstrates Absurd's capabilities while keeping the deployment secure
+            and avoiding external API dependencies.
+        </p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
