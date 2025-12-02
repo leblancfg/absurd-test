@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import random
 import time
 
 import httpx
@@ -92,7 +93,8 @@ def handle_agent_task(params: dict, ctx):
 
 def test_task(prompt: str) -> str:
     """Simulate work by sleeping instead of calling AI."""
-    time.sleep(3)
+    sleep_time = 3 + random.uniform(-0.5, 0.5)
+    time.sleep(sleep_time)
     return f"Test result for: {prompt}"
 
 

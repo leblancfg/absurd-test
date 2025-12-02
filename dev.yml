@@ -12,9 +12,9 @@ up:
       meet: cp example.env .env && echo "Please update .env with your configuration values."
   - custom:
       name: Start PostgreSQL
-      met?: brew services list --json | jq --exit-status 'any(.[]; .name == "postgresql@14" and .status == "started")'
-      meet: brew services start postgresql@14 && sleep 1
-      down: brew services stop postgresql@14
+      met?: brew services list --json | jq --exit-status 'any(.[]; .name == "postgresql" and .status == "started")'
+      meet: brew services start postgresql && sleep 1
+      down: brew services stop postgresql
   - custom:
       name: Create Development Database
       met?: "psql -U postgres -d absurd_test -c '\\l' | grep -q -e vault-set"
@@ -28,6 +28,8 @@ commands:
   server: overmind start --no-port --any-can-die -f Procfile
   api: uv run uvicorn absurd_test.main:app --reload
   worker: uv run python -m absurd_test.worker
+  bench: uv run python benchmarks/stress_test.py --workers 20 --tasks 500 --concurrent 100
+  nuke: ./scripts/reset_db.sh
 
 open:
   app: http://localhost:8000
