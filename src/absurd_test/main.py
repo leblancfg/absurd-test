@@ -40,12 +40,13 @@ app = FastAPI(title="Absurd Agent Demo", lifespan=lifespan)
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """Show the main page with job submission form and job list."""
+    settings = get_settings()
     async with get_async_session() as session:
         result = await session.execute(
             select(AgentJob).order_by(AgentJob.created_at.desc()).limit(3)
         )
         jobs = result.scalars().all()
-    return templates.TemplateResponse("index.html", {"request": request, "jobs": jobs})
+    return templates.TemplateResponse("index.html", {"request": request, "jobs": jobs, "kiosk": settings.kiosk})
 
 
 @app.get("/about", response_class=HTMLResponse)
